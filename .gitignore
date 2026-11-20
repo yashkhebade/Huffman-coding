@@ -1,0 +1,26 @@
+# Executables and build outputs
+*.exe
+*.o
+*.obj
+*.dll
+*.so
+*.dylib
+
+# Exclude PDF documentation and script per instructions
+*.pdf
+generate_pdf.py
+
+# Compressed artifacts / scratch
+*.huffz
+out.bin
+restored.txt
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

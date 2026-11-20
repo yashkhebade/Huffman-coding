@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>huffz — Lossless Compression Studio</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(18, 24, 38, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --radius: 14px;
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8fafc;
+        --card-bg: rgba(255, 255, 255, 0.95);
+        --card-border: rgba(0, 0, 0, 0.08);
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --accent: #0284c7;
+        --accent-glow: rgba(2, 132, 199, 0.1);
+        --primary: #4f46e5;
+        --primary-hover: #4338ca;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 32px 16px 64px;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(56, 189, 248, 0.08) 0%, transparent 40%);
+    }
+
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .badge-bar {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--card-border);
+      color: var(--accent);
+      border: 1px solid var(--card-border);
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    @media (prefers-color-scheme: light) {
+      h1 {
+        background: linear-gradient(135deg, #0f172a 30%, #0284c7 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+    .card-title svg {
+      color: var(--accent);
+    }
+
+    /* Drop Zones */
+    .drop-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 2px dashed var(--card-border);
+      border-radius: 10px;
+      padding: 36px 20px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.015);
+    }
+    .drop-zone:hover, .drop-zone.over {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      transform: translateY(-1px);
+    }
+    .drop-icon {
+      width: 44px;
+      height: 44px;
+      color: var(--accent);
+      opacity: 0.85;
+      transition: transform 0.2s ease;
+    }
+    .drop-zone:hover .drop-icon {
+      transform: scale(1.1);
+    }
+    .drop-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .drop-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    input[type=file] { display: none; }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .metric-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      padding: 14px 16px;
+      border-radius: 10px;
+    }
+    .metric-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .metric-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* Comparison Table */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 16px 0;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 12px 16px;
+      text-align: right;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    th:first-child, td:first-child { text-align: left; }
+    td {
+      padding: 12px 16px;
+      text-align: right;
+      border-bottom: 1px solid var(--card-border);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr.selected {
+      background: var(--accent-glow);
+    }
+    tr.selected td {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Visual Ratio Bar */
+    .ratio-bar-wrap {
+      margin: 16px 0;
+    }
+    .ratio-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .ratio-track {
+      height: 8px;
+      background: var(--card-border);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+    .ratio-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    /* Action Toolbar */
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--card-border);
+    }
+    .method-select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    select {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+    }
+    select option {
+      background: var(--bg);
+      color: var(--text);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+    .btn-success:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    /* Alert / Notes */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin: 14px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .alert-warning {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .msg {
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 10px;
+    }
+    .msg.ok { color: var(--success); }
+    .msg.er { color: var(--danger); }
+    .msg.mut { color: var(--text-muted); }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 40px;
+    }
+    footer code {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge-bar">
+        <span class="tag">DSA Project</span>
+        <span class="tag">Min-Heap Greedy</span>
+        <span class="tag">Canonical Huffman</span>
+        <span class="tag">CRC-32 Lossless</span>
+      </div>
+      <h1>huffz Studio</h1>
+      <p>High-performance lossless compression engine. Runs 100% in-browser via typed byte arrays.</p>
+    </header>
+
+    <!-- SECTION 1: COMPRESSION -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>1. Compress File</span>
+      </div>
+
+      <label class="drop-zone" id="dz1" for="f1">
+        <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="12" y1="18" x2="12" y2="12"></line>
+          <line x1="9" y1="15" x2="15" y2="15"></line>
+        </svg>
+        <span class="drop-title">Choose a file or drag &amp; drop here</span>
+        <span class="drop-hint">Text, source code, logs, CSVs, or binary files</span>
+      </label>
+      <input type="file" id="f1">
+
+      <div id="out1" hidden>
+        <!-- Metrics Cards -->
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-label">Original</div>
+            <div class="metric-value" id="m-orig">0 B</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Compressed</div>
+            <div class="metric-value" id="m-comp">0 B</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Space Saved</div>
+            <div class="metric-value" id="m-saved">0%</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Execution Time</div>
+            <div class="metric-value" id="m-time">0 ms</div>
+          </div>
+        </div>
+
+        <!-- Visual Compression Bar -->
+        <div class="ratio-bar-wrap">
+          <div class="ratio-bar-label">
+            <span>Size Reduction Visualization</span>
+            <span id="ratio-text">0% of original</span>
+          </div>
+          <div class="ratio-track">
+            <div class="ratio-fill" id="ratio-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Compressed Size</th>
+                <th>Ratio</th>
+                <th>Saved</th>
+                <th>Latency</th>
+              </tr>
+            </thead>
+            <tbody id="tb"></tbody>
+          </table>
+        </div>
+
+        <div id="warn" class="alert alert-warning" hidden></div>
+
+        <!-- Action Controls -->
+        <div class="action-bar">
+          <div class="method-select-wrap">
+            <label for="mode" style="font-size: 14px; font-weight: 500;">Format: </label>
+            <select id="mode"></select>
+          </div>
+          <button id="dl1" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Download .huffz</span>
+          </button>
+        </div>
+        <p id="m1" class="msg"></p>
+      </div>
+    </div>
+
+    <!-- SECTION 2: RESTORE -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
+        <span>2. Restore &amp; Verify File</span>
+      </div>
+
+      <label class="drop-zone" id="dz2" for="f2">
+        <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        <span class="drop-title">Drop your compressed file here</span>
+        <span class="drop-hint">Select a .huffz or .huffz.txt container to decompress</span>
+      </label>
+      <input type="file" id="f2">
+
+      <div style="margin-top: 16px;">
+        <p id="m2" class="msg"></p>
+        <button id="dl2" class="btn btn-success" style="margin-top: 12px;" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download Restored File</span>
+        </button>
+      </div>
+    </div>
+
+    <footer>
+      <p>Compatible with the C++17 <code>huffz</code> CLI container specification (HUFZ 17-byte header + CRC-32).</p>
+    </footer>
+  </div>
+
+  <script>
+    const MAXL = 52, MODES = ['store', 'huffman', 'rle'];
+    const crc32 = (() => {
+      const t = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+        t[i] = c >>> 0;
+      }
+      return d => {
+        let c = 0xFFFFFFFF;
+        for (let i = 0; i < d.length; i++) c = t[(c ^ d[i]) & 255] ^ (c >>> 8);
+        return (c ^ 0xFFFFFFFF) >>> 0;
+      };
+    })();
+
+    const put64 = (dv, o, n) => {
+      dv.setUint32(o, n >>> 0, true);
+      dv.setUint32(o + 4, Math.floor(n / 4294967296), true);
+    };
+    const get64 = (dv, o) => dv.getUint32(o, true) + dv.getUint32(o + 4, true) * 4294967296;
+
+    function lengths(freq) {
+      const nodes = [], leaf = [], items = [];
+      for (let s = 0; s < 256; s++) if (freq[s]) { nodes.push([-1, -1]); leaf.push(s); items.push([freq[s], nodes.length - 1]); }
+      const len = new Uint8Array(256);
+      if (!nodes.length) return len;
+      if (nodes.length == 1) { len[leaf[0]] = 1; return len; }
+      const cmp = (a, b) => a[0] - b[0] || a[1] - b[1];
+      while (items.length > 1) {
+        items.sort(cmp);
+        const a = items.shift(), b = items.shift();
+        nodes.push([a[1], b[1]]);
+        items.push([a[0] + b[0], nodes.length - 1]);
+      }
+      const dep = new Array(nodes.length).fill(0);
+      for (let i = nodes.length - 1; i >= 0; i--) {
+        if (nodes[i][0] >= 0) dep[nodes[i][0]] = dep[nodes[i][1]] = dep[i] + 1;
+      }
+      leaf.forEach((s, i) => {
+        if (dep[i] > MAXL) throw new Error("code too long");
+        len[s] = dep[i];
+      });
+      return len;
+    }
+
+    function huffEncode(inp) {
+      const freq = new Array(256).fill(0);
+      for (let i = 0; i < inp.length; i++) freq[inp[i]]++;
+      const len = lengths(freq), syms = [];
+      for (let s = 0; s < 256; s++) if (len[s]) syms.push(s);
+      let bits = 0;
+      for (const s of syms) bits += freq[s] * len[s];
+      const hdr = 10 + 2 * syms.length, out = new Uint8Array(hdr + Math.ceil(bits / 8)), dv = new DataView(out.buffer);
+      put64(dv, 0, inp.length);
+      dv.setUint16(8, syms.length, true);
+      syms.forEach((s, i) => { out[10 + 2 * i] = s; out[11 + 2 * i] = len[s]; });
+      const order = [...syms].sort((a, b) => len[a] - len[b] || a - b), code = [];
+      let c = 0, prev = order.length ? len[order[0]] : 0;
+      order.forEach((s, i) => {
+        const l = len[s];
+        if (i > 0) { c = (c + 1) * 2 ** (l - prev); prev = l; }
+        const arr = new Uint8Array(l);
+        for (let k = 0; k < l; k++) arr[k] = Math.floor(c / 2 ** (l - 1 - k)) % 2;
+        code[s] = arr;
+      });
+      let pos = 0;
+      for (let i = 0; i < inp.length; i++) {
+        const a = code[inp[i]];
+        for (let k = 0; k < a.length; k++, pos++) if (a[k]) out[hdr + (pos >> 3)] |= 0x80 >> (pos & 7);
+      }
+      return out;
+    }
+
+    function huffDecode(buf, off) {
+      const dv = new DataView(buf.buffer, buf.byteOffset + off, buf.length - off);
+      if (dv.byteLength < 10) throw new Error("truncated data");
+      const total = get64(dv, 0), n = dv.getUint16(8, true);
+      if (n > 256 || dv.byteLength < 10 + 2 * n) throw new Error("bad symbol table");
+      const len = new Uint8Array(256), count = new Array(MAXL + 2).fill(0);
+      let maxL = 0;
+      for (let i = 0; i < n; i++) {
+        const s = buf[off + 10 + 2 * i], l = buf[off + 11 + 2 * i];
+        if (l < 1 || l > MAXL || len[s]) throw new Error("bad symbol table");
+        len[s] = l; count[l]++; maxL = Math.max(maxL, l);
+      }
+      if (total == 0) return new Uint8Array(0);
+      if (!n) throw new Error("empty table for non-empty data");
+      let left = 1;
+      for (let l = 1; l <= maxL; l++) {
+        left = left * 2 - count[l];
+        if (left < 0 || left > 256) throw new Error("invalid prefix code");
+      }
+      if (n > 1 && left) throw new Error("incomplete prefix code");
+      const sorted = [];
+      for (let l = 1; l <= maxL; l++) for (let s = 0; s < 256; s++) if (len[s] == l) sorted.push(s);
+      const first = [], offs = [];
+      let fc = 0, o = 0;
+      for (let l = 1; l <= maxL; l++) {
+        fc = (fc + (l > 1 ? count[l - 1] : 0)) * 2;
+        first[l] = fc; offs[l] = o; o += count[l];
+      }
+      const dstart = off + 10 + 2 * n, nbits = (buf.length - dstart) * 8;
+      if (total > nbits) throw new Error("claimed size exceeds data");
+      const out = new Uint8Array(total);
+      let pos = 0;
+      for (let i = 0; i < total; i++) {
+        let c = 0, l = 0;
+        for (;;) {
+          if (pos >= nbits) throw new Error("bitstream exhausted (corrupt data)");
+          c = c * 2 + ((buf[dstart + (pos >> 3)] >> (7 - (pos & 7))) & 1);
+          pos++;
+          if (++l > maxL) throw new Error("invalid code in stream");
+          const d = c - first[l];
+          if (d >= 0 && d < count[l]) { out[i] = sorted[offs[l] + d]; break; }
+        }
+      }
+      return out;
+    }
+
+    function rleEncode(inp) {
+      const o = [];
+      let i = 0;
+      while (i < inp.length) {
+        const b = inp[i];
+        let r = 1;
+        while (i + r < inp.length && inp[i + r] == b && r < 255) r++;
+        o.push(r, b);
+        i += r;
+      }
+      return Uint8Array.from(o);
+    }
+
+    function rleDecode(inp) {
+      if (inp.length % 2) throw new Error("bad RLE stream");
+      let t = 0;
+      for (let i = 0; i < inp.length; i += 2) {
+        if (!inp[i]) throw new Error("bad RLE run length");
+        t += inp[i];
+      }
+      const o = new Uint8Array(t);
+      let p = 0;
+      for (let i = 0; i < inp.length; i += 2) {
+        o.fill(inp[i + 1], p, p + inp[i]);
+        p += inp[i];
+      }
+      return o;
+    }
+
+    function compressWith(inp, m) {
+      const pay = [inp, huffEncode(inp), rleEncode(inp)][m];
+      const out = new Uint8Array(17 + pay.length), dv = new DataView(out.buffer);
+      out.set([72, 85, 70, 90, m]);
+      put64(dv, 5, inp.length);
+      dv.setUint32(13, crc32(inp), true);
+      out.set(pay, 17);
+      return out;
+    }
+
+    function decompress(buf) {
+      if (buf.length < 17 || buf[0] != 72 || buf[1] != 85 || buf[2] != 70 || buf[3] != 90) throw new Error("not a HUFZ file (bad magic)");
+      const dv = new DataView(buf.buffer, buf.byteOffset, buf.length), m = buf[4], size = get64(dv, 5), crc = dv.getUint32(13, true);
+      let out;
+      if (m == 0) out = buf.slice(17);
+      else if (m == 1) out = huffDecode(buf, 17);
+      else if (m == 2) out = rleDecode(buf.slice(17));
+      else throw new Error("unknown mode");
+      if (out.length != size) throw new Error("size mismatch after decompression");
+      if (crc32(out) != crc) throw new Error("CRC mismatch: data corrupted");
+      return out;
+    }
+
+    const $ = id => document.getElementById(id), fmt = n => n.toLocaleString() + ' B';
+    const NAMES = ['Huffman (Optimal Prefix Tree)', 'Run-Length Encoding (RLE)'], MODE_ID = [1, 2];
+    NAMES.forEach((n, i) => $('mode').add(new Option(n, i)));
+
+    let src = null, res = [], restored = null, rname = '';
+    const tick = () => new Promise(r => setTimeout(r, 20));
+
+    async function save(name, bytes, msgEl) {
+      const a = document.createElement('a');
+      name = name.replace(/\.huffz\.txt$/, '.huffz');
+      a.href = URL.createObjectURL(new Blob([bytes]));
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      msgEl.className = 'msg ok';
+      msgEl.textContent = '✓ Saved ' + name;
+    }
+
+    function drop(dz, input) {
+      ['dragover', 'dragenter'].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.add('over'); }));
+      ['dragleave', 'drop'].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.remove('over'); }));
+      dz.addEventListener('drop', e => {
+        if (e.dataTransfer.files[0]) {
+          input.files = e.dataTransfer.files;
+          input.dispatchEvent(new Event('change'));
+        }
+      });
+    }
+    drop($('dz1'), $('f1'));
+    drop($('dz2'), $('f2'));
+
+    function render() {
+      const tb = $('tb');
+      tb.textContent = '';
+      const sel = +$('mode').value;
+      res.forEach((r, i) => {
+        const tr = tb.insertRow();
+        if (i === sel) tr.className = 'selected';
+        const ratio = src.data.length ? r.out.length / src.data.length : 1;
+        const saved = (1 - ratio) * 100;
+        
+        [
+          NAMES[i],
+          fmt(r.out.length),
+          ratio.toFixed(3),
+          (saved > 0 ? '+' : '') + saved.toFixed(1) + '%',
+          r.ms.toFixed(1) + ' ms'
+        ].forEach(t => tr.insertCell().textContent = t);
+
+        tr.style.cursor = 'pointer';
+        tr.onclick = () => { $('mode').value = i; render(); };
+      });
+
+      // Update primary metric boxes
+      const chosen = res[sel];
+      if (chosen) {
+        $('m-orig').textContent = fmt(src.data.length);
+        $('m-comp').textContent = fmt(chosen.out.length);
+        const saved = ((1 - (chosen.out.length / src.data.length)) * 100);
+        $('m-saved').textContent = (saved > 0 ? '+' : '') + saved.toFixed(1) + '%';
+        $('m-time').textContent = chosen.ms.toFixed(1) + ' ms';
+
+        const pct = Math.min(100, Math.max(5, (chosen.out.length / src.data.length) * 100));
+        $('ratio-fill').style.width = pct + '%';
+        $('ratio-text').textContent = pct.toFixed(1) + '% of original file size';
+      }
+    }
+
+    $('f1').addEventListener('change', async e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      $('m1').textContent = 'Compressing file with Huffman & RLE algorithms…';
+      $('m1').className = 'msg mut';
+      $('out1').hidden = false;
+      await tick();
+      const data = new Uint8Array(await f.arrayBuffer());
+      src = { name: f.name, data };
+      res = [];
+      try {
+        for (let m = 0; m < 2; m++) {
+          await tick();
+          const t = performance.now();
+          const out = compressWith(data, MODE_ID[m]);
+          res.push({ out, ms: performance.now() - t });
+        }
+        let best = 0;
+        res.forEach((r, i) => { if (r.out.length < res[best].out.length) best = i; });
+        $('mode').value = best;
+        render();
+
+        const ext = (f.name.split('.').pop() || '').toLowerCase();
+        const packed = ['docx', 'xlsx', 'pptx', 'zip', 'pdf', 'jpg', 'jpeg', 'png', 'mp3', 'mp4', 'gz', '7z'].includes(ext);
+        let note = packed ? 'ℹ Note: .' + ext + ' files are already compressed binary archives. Huffman will save little to no space on them. Plain text, source code, logs, and CSVs compress best.' : '';
+        if (res[best].out.length > data.length) note += (note ? ' ' : '') + '⚠ Pigeonhole Principle in effect: neither method shrinks this specific file; output is slightly larger due to the 17-byte header.';
+        const w = $('warn');
+        w.hidden = !note;
+        w.textContent = note.trim();
+        $('m1').textContent = '';
+      } catch (err) {
+        $('m1').className = 'msg er';
+        $('m1').textContent = 'Error: ' + err.message;
+      }
+    });
+
+    $('mode').addEventListener('change', () => { if (src) render(); });
+
+    $('dl1').addEventListener('click', () => {
+      if (!src) return;
+      const o = res[+$('mode').value].out;
+      try {
+        const back = decompress(o);
+        if (back.length !== src.data.length || crc32(back) !== crc32(src.data)) throw new Error('verification failed');
+      } catch (e) {
+        $('m1').className = 'msg er';
+        $('m1').textContent = 'Round-trip verification failed: ' + e.message;
+        return;
+      }
+      save(src.name + '.huffz', o, $('m1'));
+    });
+
+    $('f2').addEventListener('change', async e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const m = $('m2');
+      $('dl2').hidden = true;
+      restored = null;
+      try {
+        await tick();
+        const buf = new Uint8Array(await f.arrayBuffer());
+        restored = decompress(buf);
+        rname = f.name.replace(/\.huffz(\.txt)?$/i, '') || 'restored.txt';
+        if (rname === f.name) rname = 'restored_' + f.name;
+        m.className = 'msg ok';
+        m.textContent = '✓ Container Valid! CRC-32 matched bit-for-bit. Restored ' + fmt(restored.length) + ' as ' + rname;
+        $('dl2').hidden = false;
+      } catch (err) {
+        m.className = 'msg er';
+        m.textContent = 'Decompression failed: ' + err.message;
+      }
+    });
+
+    $('dl2').addEventListener('click', () => { if (restored) save(rname, restored, $('m2')); });
+  </script>
+</body>
+</html>
